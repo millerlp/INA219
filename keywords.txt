@@ -1,0 +1,17 @@
+#######################################
+# Datatypes (KEYWORD1)
+#######################################
+
+Adafruit_INA219	KEYWORD1
+
+#######################################
+# Methods and Functions (KEYWORD2)
+#######################################
+
+setCalibration_32V_32A	KEYWORD2
+setCalibration_32V_2A	KEYWORD2
+setCalibration_32V_1A	KEYWORD2
+setCalibration_16V_400mA	KEYWORD2
+getShuntVoltage_mV	KEYWORD2
+getBusVoltage_V	KEYWORD2
+getCurrent_mA	KEYWORD2
