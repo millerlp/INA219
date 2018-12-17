@@ -449,7 +449,7 @@ Adafruit_INA219::Adafruit_INA219(uint8_t addr) {
 
 /**************************************************************************/
 /*! 
-    @brief  Setups the HW (defaults to 32V and 2A for calibration values)
+    @brief  Setups the HW (defaults to 32V and 32A for calibration values)
 */
 /**************************************************************************/
 void Adafruit_INA219::begin(uint8_t addr) {
