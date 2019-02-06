@@ -1,5 +1,5 @@
-/**************************************************************************/
 /*! 
+
     A fork of the Adafruit INA 219 current sensor library
     https://github.com/adafruit/Adafruit_INA219
     @file     Adafruit_INA219.cpp
@@ -9,7 +9,7 @@
 	Driver for the INA219 current sensor
 
 	This is a library for the Adafruit INA219 breakout
-	----> https://www.adafruit.com/products/???
+	----> https://www.adafruit.com/products/904
 		
 	Adafruit invests time and resources providing this open source code, 
 	please support Adafruit and open-source hardware by purchasing 
@@ -33,17 +33,17 @@
 /**************************************************************************/
 void Adafruit_INA219::wireWriteRegister (uint8_t reg, uint16_t value)
 {
-  Wire.beginTransmission(ina219_i2caddr);
+  _i2c->beginTransmission(ina219_i2caddr);
   #if ARDUINO >= 100
-    Wire.write(reg);                       // Register
-    Wire.write((value >> 8) & 0xFF);       // Upper 8-bits
-    Wire.write(value & 0xFF);              // Lower 8-bits
+    _i2c->write(reg);                       // Register
+    _i2c->write((value >> 8) & 0xFF);       // Upper 8-bits
+    _i2c->write(value & 0xFF);              // Lower 8-bits
   #else
-    Wire.send(reg);                        // Register
-    Wire.send(value >> 8);                 // Upper 8-bits
-    Wire.send(value & 0xFF);               // Lower 8-bits
+    _i2c->send(reg);                        // Register
+    _i2c->send(value >> 8);                 // Upper 8-bits
+    _i2c->send(value & 0xFF);               // Lower 8-bits
   #endif
-  Wire.endTransmission();
+  _i2c->endTransmission();
 }
 
 /**************************************************************************/
@@ -54,23 +54,23 @@ void Adafruit_INA219::wireWriteRegister (uint8_t reg, uint16_t value)
 void Adafruit_INA219::wireReadRegister(uint8_t reg, uint16_t *value)
 {
 
-  Wire.beginTransmission(ina219_i2caddr);
+  _i2c->beginTransmission(ina219_i2caddr);
   #if ARDUINO >= 100
-    Wire.write(reg);                       // Register
+    _i2c->write(reg);                       // Register
   #else
-    Wire.send(reg);                        // Register
+    _i2c->send(reg);                        // Register
   #endif
-  Wire.endTransmission();
+  _i2c->endTransmission();
   
   delay(1); // Max 12-bit conversion time is 586us per sample
 
-  Wire.requestFrom(ina219_i2caddr, (uint8_t)2);  
+  _i2c->requestFrom(ina219_i2caddr, (uint8_t)2);  
   #if ARDUINO >= 100
     // Shift values to create properly formed integer
-    *value = ((Wire.read() << 8) | Wire.read());
+    *value = ((_i2c->read() << 8) | _i2c->read());
   #else
     // Shift values to create properly formed integer
-    *value = ((Wire.receive() << 8) | Wire.receive());
+    *value = ((_i2c->receive() << 8) | _i2c->receive());
   #endif
 }
 
@@ -151,7 +151,7 @@ void Adafruit_INA219::setCalibration_32V_2A(void)
   
   // Set multipliers to convert raw current/power values
   ina219_currentDivider_mA = 10;  // Current LSB = 100uA per bit (1000/100 = 10)
-  ina219_powerDivider_mW = 2;     // Power LSB = 1mW per bit (2/1)
+  ina219_powerMultiplier_mW = 2;     // Power LSB = 1mW per bit (2/1)
 
   // Set Calibration register to 'Cal' calculated above	
   wireWriteRegister(INA219_REG_CALIBRATION, ina219_calValue);
@@ -244,7 +244,7 @@ void Adafruit_INA219::setCalibration_32V_32A(void)
     
     // Set multipliers to convert raw current/power values
     ina219_currentDivider_mA = 1;  // Current LSB = 1000uA per bit (1000/1000 = 1)
-    ina219_powerDivider_mW = 20;     // Power LSB = 1mW per bit (20/1)
+    ina219_powerMultiplier_mW = 20;     // Power LSB = 1mW per bit (20/1)
     
     // Set Calibration register to 'Cal' calculated above
     wireWriteRegister(INA219_REG_CALIBRATION, ina219_calValue);
@@ -338,7 +338,7 @@ void Adafruit_INA219::setCalibration_32V_1A(void)
 
   // Set multipliers to convert raw current/power values
   ina219_currentDivider_mA = 25;      // Current LSB = 40uA per bit (1000/40 = 25)
-  ina219_powerDivider_mW = 1;         // Power LSB = 800�W per bit
+  ina219_powerMultiplier_mW = 1;         // Power LSB = 800�W per bit
 
   // Set Calibration register to 'Cal' calculated above	
   wireWriteRegister(INA219_REG_CALIBRATION, ina219_calValue);
@@ -422,7 +422,7 @@ void Adafruit_INA219::setCalibration_16V_400mA(void) {
   
   // Set multipliers to convert raw current/power values
   ina219_currentDivider_mA = 20;  // Current LSB = 50uA per bit (1000/50 = 20)
-  ina219_powerDivider_mW = 1;     // Power LSB = 1mW per bit
+  ina219_powerMultiplier_mW = 1;     // Power LSB = 1mW per bit
 
   // Set Calibration register to 'Cal' calculated above 
   wireWriteRegister(INA219_REG_CALIBRATION, ina219_calValue);
@@ -439,33 +439,52 @@ void Adafruit_INA219::setCalibration_16V_400mA(void) {
 /**************************************************************************/
 /*! 
     @brief  Instantiates a new INA219 class
+    @param addr the I2C address the device can be found on. Default is 0x40
 */
 /**************************************************************************/
 Adafruit_INA219::Adafruit_INA219(uint8_t addr) {
   ina219_i2caddr = addr;
   ina219_currentDivider_mA = 0;
-  ina219_powerDivider_mW = 0;
+  ina219_powerMultiplier_mW = 0;
 }
 
 /**************************************************************************/
 /*! 
     @brief  Setups the HW (defaults to 32V and 32A for calibration values)
+    @param theWire the TwoWire object to use
 */
 /**************************************************************************/
-void Adafruit_INA219::begin(uint8_t addr) {
-  ina219_i2caddr = addr;
-  begin();
-}
-
-void Adafruit_INA219::begin(void) {
-  Wire.begin();    
-  // Set chip to large range config values to start
-  setCalibration_32V_32A();
+void Adafruit_INA219::begin(TwoWire *theWire) {
+  _i2c = theWire;
+  init();
 }
 
 /**************************************************************************/
 /*! 
+    @brief  Setup the HW using the default Wire object
+*/
+/**************************************************************************/
+void Adafruit_INA219::begin(void) {
+  _i2c = &Wire;
+  init();
+}
+
+/**************************************************************************/
+/*! 
+    @brief  begin I2C and set up the hardware (default 32V, 32A range)
+*/
+/**************************************************************************/
+void Adafruit_INA219::init() {
+  _i2c->begin();
+  // Set chip to large range config values to start
+  setCalibration_32V_32A();
+}
+
+
+/**************************************************************************/
+/*! 
     @brief  Gets the raw bus voltage (16-bit signed integer, so +-32767)
+    @return the raw bus voltage reading
 */
 /**************************************************************************/
 int16_t Adafruit_INA219::getBusVoltage_raw() {
@@ -479,6 +498,7 @@ int16_t Adafruit_INA219::getBusVoltage_raw() {
 /**************************************************************************/
 /*! 
     @brief  Gets the raw shunt voltage (16-bit signed integer, so +-32767)
+    @return the raw shunt voltage reading
 */
 /**************************************************************************/
 int16_t Adafruit_INA219::getShuntVoltage_raw() {
@@ -490,6 +510,7 @@ int16_t Adafruit_INA219::getShuntVoltage_raw() {
 /**************************************************************************/
 /*! 
     @brief  Gets the raw current value (16-bit signed integer, so +-32767)
+    @return the raw current reading
 */
 /**************************************************************************/
 int16_t Adafruit_INA219::getCurrent_raw() {
@@ -507,9 +528,32 @@ int16_t Adafruit_INA219::getCurrent_raw() {
   return (int16_t)value;
 }
  
+ /**************************************************************************/
+/*! 
+    @brief  Gets the raw power value (16-bit signed integer, so +-32767)
+    @return raw power reading
+*/
+/**************************************************************************/
+int16_t Adafruit_INA219::getPower_raw() {
+  uint16_t value;
+
+  // Sometimes a sharp load will reset the INA219, which will
+  // reset the cal register, meaning CURRENT and POWER will
+  // not be available ... avoid this by always setting a cal
+  // value even if it's an unfortunate extra step
+  wireWriteRegister(INA219_REG_CALIBRATION, ina219_calValue);
+
+  // Now we can safely read the POWER register!
+  wireReadRegister(INA219_REG_POWER, &value);
+  
+  return (int16_t)value;
+}
+ 
+ 
 /**************************************************************************/
 /*! 
     @brief  Gets the shunt voltage in mV (so +-327mV)
+    @return the shunt voltage converted to millivolts
 */
 /**************************************************************************/
 float Adafruit_INA219::getShuntVoltage_mV() {
@@ -521,6 +565,7 @@ float Adafruit_INA219::getShuntVoltage_mV() {
 /**************************************************************************/
 /*! 
     @brief  Gets the shunt voltage in volts
+    @return the bus voltage converted to volts
 */
 /**************************************************************************/
 float Adafruit_INA219::getBusVoltage_V() {
@@ -532,10 +577,24 @@ float Adafruit_INA219::getBusVoltage_V() {
 /*! 
     @brief  Gets the current value in mA, taking into account the
             config settings and current LSB
+    @return the current reading convereted to milliamps
 */
 /**************************************************************************/
 float Adafruit_INA219::getCurrent_mA() {
   float valueDec = getCurrent_raw();
   valueDec /= ina219_currentDivider_mA;
+  return valueDec;
+}
+
+/**************************************************************************/
+/*! 
+    @brief  Gets the power value in mW, taking into account the
+            config settings and current LSB
+    @return power reading converted to milliwatts
+*/
+/**************************************************************************/
+float Adafruit_INA219::getPower_mW() {
+  float valueDec = getPower_raw();
+  valueDec *= ina219_powerMultiplier_mW;
   return valueDec;
 }
