@@ -15,3 +15,4 @@ setCalibration_16V_400mA	KEYWORD2
 getShuntVoltage_mV	KEYWORD2
 getBusVoltage_V	KEYWORD2
 getCurrent_mA	KEYWORD2
+getPower_mW	KEYWORD2
