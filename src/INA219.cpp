@@ -72,7 +72,7 @@ void Adafruit_INA219::wireReadRegister(uint8_t reg, uint16_t *value)
     // Shift values to create properly formed integer
     *value = ((_i2c->receive() << 8) | _i2c->receive());
   #endif
-}
+} 
 
 /**************************************************************************/
 /*! 
